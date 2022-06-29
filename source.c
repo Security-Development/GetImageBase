@@ -113,9 +113,13 @@ HANDLE GetProcessHandle(DWORD pid) {
 }
 
 int main() {
-	TokenEscalation(SE_DEBUG_NAME); 
+	TokenEscalation(SE_DEBUG_NAME);
 	
-	HANDLE hProcess = GetProcessHandle(16708);
+	DWORD pid;
+	printf("[*] PID : ");
+	scanf("%ld", &pid);
+	
+	HANDLE hProcess = GetProcessHandle(pid);
 	PPEB peb = (PPEB)dwGetBaseAddress(hProcess);
 	PEB peb32;
 	
@@ -128,7 +132,7 @@ int main() {
 	
 	PIMAGE_DOS_HEADER header = (PIMAGE_DOS_HEADER)pe;
 	
-	printf("[*] PID : 16708\n");
+	printf("[*] PID : %d\n", pid);
 	printf("[+] PEB : 0x%x\n", peb);
 	printf("[+] ImageBase : 0x%x\n", ImageBase);
 	printf("[+] PE : %x == %s\n", header->e_magic, &header->e_magic);
