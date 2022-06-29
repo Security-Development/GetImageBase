@@ -128,25 +128,58 @@ int main() {
 	PVOID ImageBase = peb32.Reserved3[1]; //[1] is ImageBase Address
 	PBYTE pe[0x40]; // DOS HEADER SIZE is 64byte
 	PBYTE nt[0x8f]; // NT HEADER SIZE is 153byte
+	PBYTE iat[0x200]; // IMAGE_IMPORT_DESCRIPTOR SIZE is 20byte
+	PBYTE thunk[0x50];
+	PBYTE section[0x200];
 	
-	
-	ReadProcessMemory(hProcess, ImageBase, pe, 512, NULL);
+	ReadProcessMemory(hProcess, ImageBase, pe, 0x40, NULL);
 	
 	PIMAGE_DOS_HEADER HEADER = (PIMAGE_DOS_HEADER)pe;
 	
-	ReadProcessMemory(hProcess, ImageBase + HEADER->e_lfanew, nt, 512, NULL);
+	ReadProcessMemory(hProcess, ImageBase + HEADER->e_lfanew, nt, 0x8f, NULL);
 	
 	PIMAGE_NT_HEADERS NT = (PIMAGE_NT_HEADERS)nt;
 	
-	printf("[*] PID : %d\n", pid);
+	ReadProcessMemory(hProcess, ImageBase + NT->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress, iat, 0, NULL);
+	
+	PIMAGE_IMPORT_DESCRIPTOR IDD = (PIMAGE_IMPORT_DESCRIPTOR) iat;
+	
+	ReadProcessMemory(hProcess, (LPCVOID)ImageBase + NT->FileHeader.SizeOfOptionalHeader + sizeof(NT->FileHeader) + 0x4 + HEADER->e_lfanew, section, 0x200, NULL);
+	
+	PIMAGE_SECTION_HEADER SECTION = (PIMAGE_SECTION_HEADER)section;
+	
+	printf("= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =\n");
+	printf("[*] Target PID : %d\n", pid);
 	printf("[+] PEB : 0x%x\n", peb);
 	printf("[+] ImageBase : 0x%x\n", ImageBase); 
+	printf("= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =\n");
 	printf("[+] DOS Offset : 0x0 ~ 0x39\n");
-	printf("[+] DOS Stub Offset : 0x40 ~ 0x%x\n", HEADER->e_lfanew - 1);
-	printf("[+] NT Offset : 0x%x ~ 0x%x\n", HEADER->e_lfanew, (HEADER->e_lfanew + 0x8f) - 1);
-	printf("[+] SECTION Offset : 0x%x ~ 0x%x\n", HEADER->e_lfanew + 0x8f, ((HEADER->e_lfanew + 0x8f - 0x1) * (0x28 * NT->FileHeader.NumberOfSections))) ; //Section Header struct Size 40byte
-	printf("[+] DOS : %x == %s\n", HEADER->e_magic, &HEADER->e_magic);
-	printf("[+] NT : %x == %s\n", NT->Signature, &NT->Signature);
+	printf("[+] DOS Stub Offset : 0x40 ~ 0x%x\n", HEADER->e_lfanew - 0x1);
+	printf("[+] NT Offset : 0x%x ~ 0x%x\n", HEADER->e_lfanew, (HEADER->e_lfanew + 0x8f) - 0x1);
+	printf("[+] SECTION Offset : 0x%x ~ 0x%x\n", HEADER->e_lfanew + 0x8f, ((HEADER->e_lfanew + 0x8f - 0x1) + (0x28 * NT->FileHeader.NumberOfSections))) ; //Section Header struct Size 40byte
+	printf("= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =\n");
+	printf("[+] DOS : 0x%x == %s\n", HEADER->e_magic, &HEADER->e_magic);
+	printf("[+] NT : 0x%x == %s\n", NT->Signature, &NT->Signature);
+	printf("= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =\n");
+	printf("[+] SECTION VirtualAddress : 0x%x\n", SECTION->VirtualAddress);
+	printf("[+] SECTION PointerToRawData : 0x%x\n", SECTION->PointerToRawData);
+	printf("= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =\n");
 	
+	ReadProcessMemory(hProcess, (LPVOID)NT->OptionalHeader.ImageBase + IDD->OriginalFirstThunk, thunk, 0x50, NULL);
+	PIMAGE_THUNK_DATA THUNK = (PIMAGE_THUNK_DATA)thunk;
+	
+	/**
+		Proceeding
+	**/
+	
+	
+	for(int i = 0;  IDD[i].FirstThunk ; i++) {
+		PBYTE dllName[0x100];
+		
+		ReadProcessMemory(hProcess, ImageBase + IDD[i].Name, dllName, 0x100, NULL);
+		
+		printf("%s\n", dllName);
+	}	
+	printf("[+] Library Name Address RVA : 0x%x\n", SECTION->PointerToRawData);
 	return 0;
 }
