@@ -126,16 +126,23 @@ int main() {
 	ReadProcessMemory(hProcess, (void*)peb, &peb32, sizeof(PEB), NULL);
 	
 	PVOID ImageBase = peb32.Reserved3[1]; //[1] is ImageBase Address
-	PBYTE pe[512];
+	PBYTE pe[40]; // DOS HEADER SIZE is 40byte;
+	PBYTE nt[512];
+	
 	
 	ReadProcessMemory(hProcess, ImageBase, pe, 512, NULL);
 	
-	PIMAGE_DOS_HEADER header = (PIMAGE_DOS_HEADER)pe;
+	PIMAGE_DOS_HEADER HEADER = (PIMAGE_DOS_HEADER)pe;
+	
+	ReadProcessMemory(hProcess, ImageBase + HEADER->e_lfanew, nt, 512, NULL);
+	
+	PIMAGE_NT_HEADERS NT = (PIMAGE_NT_HEADERS)nt;
 	
 	printf("[*] PID : %d\n", pid);
 	printf("[+] PEB : 0x%x\n", peb);
 	printf("[+] ImageBase : 0x%x\n", ImageBase);
-	printf("[+] PE : %x == %s\n", header->e_magic, &header->e_magic);
+	printf("[+] PE : %x == %s\n", HEADER->e_magic, &HEADER->e_magic);
+	printf("[+] NT : %x == %s\n", NT->Signature, &NT->Signature);
 	
 	return 0;
 }
