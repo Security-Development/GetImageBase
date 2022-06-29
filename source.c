@@ -126,8 +126,8 @@ int main() {
 	ReadProcessMemory(hProcess, (void*)peb, &peb32, sizeof(PEB), NULL);
 	
 	PVOID ImageBase = peb32.Reserved3[1]; //[1] is ImageBase Address
-	PBYTE pe[0x40]; // DOS HEADER SIZE is 64byte;
-	PBYTE nt[512];
+	PBYTE pe[0x40]; // DOS HEADER SIZE is 64byte
+	PBYTE nt[0x8f]; // NT HEADER SIZE is 153byte
 	
 	
 	ReadProcessMemory(hProcess, ImageBase, pe, 512, NULL);
@@ -140,9 +140,12 @@ int main() {
 	
 	printf("[*] PID : %d\n", pid);
 	printf("[+] PEB : 0x%x\n", peb);
-	printf("[+] ImageBase : 0x%x\n", ImageBase);
-	printf("[+] PE Offset : 0x%x\n", )
-	printf("[+] PE : %x == %s\n", HEADER->e_magic, &HEADER->e_magic);
+	printf("[+] ImageBase : 0x%x\n", ImageBase); 
+	printf("[+] DOS Offset : 0x0 ~ 0x39\n");
+	printf("[+] DOS Stub Offset : 0x40 ~ 0x%x\n", HEADER->e_lfanew - 1);
+	printf("[+] NT Offset : 0x%x ~ 0x%x\n", HEADER->e_lfanew, (HEADER->e_lfanew + 0x8f) - 1);
+	printf("[+] SECTION Offset : 0x%x ~ 0x%x\n", HEADER->e_lfanew + 0x8f, ((HEADER->e_lfanew + 0x8f - 0x1) * (0x28 * NT->FileHeader.NumberOfSections))) ; //Section Header struct Size 40byte
+	printf("[+] DOS : %x == %s\n", HEADER->e_magic, &HEADER->e_magic);
 	printf("[+] NT : %x == %s\n", NT->Signature, &NT->Signature);
 	
 	return 0;
