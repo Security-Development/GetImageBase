@@ -126,7 +126,7 @@ int main() {
 	ReadProcessMemory(hProcess, (void*)peb, &peb32, sizeof(PEB), NULL);
 	
 	PVOID ImageBase = peb32.Reserved3[1]; //[1] is ImageBase Address
-	PBYTE pe[40]; // DOS HEADER SIZE is 40byte;
+	PBYTE pe[0x40]; // DOS HEADER SIZE is 64byte;
 	PBYTE nt[512];
 	
 	
@@ -141,6 +141,7 @@ int main() {
 	printf("[*] PID : %d\n", pid);
 	printf("[+] PEB : 0x%x\n", peb);
 	printf("[+] ImageBase : 0x%x\n", ImageBase);
+	printf("[+] PE Offset : 0x%x\n", )
 	printf("[+] PE : %x == %s\n", HEADER->e_magic, &HEADER->e_magic);
 	printf("[+] NT : %x == %s\n", NT->Signature, &NT->Signature);
 	
